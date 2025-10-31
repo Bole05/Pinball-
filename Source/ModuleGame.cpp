@@ -176,7 +176,25 @@ bool ModuleGame::Start()
 
 	
 	sensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH, 50);
-	pala_l = App->physics->CreateRectangle(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH);
+	pala_l = App->physics->CreateRectangle(340, 395, pala_left.width/2, pala_left.height/2);
+	pala_l->body->SetType(b2_dynamicBody);
+	
+	PhysBody* pivote_L = App->physics->CreateRectangle(460, 295, 5, 5);
+	pivote_L->body->SetType(b2_staticBody);
+
+	b2RevoluteJointDef jointDef;
+	jointDef.Initialize(pivote_L->body, pala_l->body, pivote_L->body->GetWorldCenter());
+	jointDef.enableMotor = true;         // Activamos el motor
+	jointDef.maxMotorTorque = 1000.0f;   // Mucha fuerza
+	jointDef.motorSpeed = 0.0f;          // Velocidad inicial
+	jointDef.enableLimit = true;         // Límites de rotación
+	jointDef.lowerAngle = -0.25f * b2_pi; // -45 grados
+	jointDef.upperAngle = 0.20f * b2_pi;  // +36 grados
+
+	// Guardamos la junta en nuestra variable
+	pala_l_joint = App->physics->CreateJoint(&jointDef);
+
+
 	return ret;
 }
 
@@ -192,6 +210,15 @@ bool ModuleGame::CleanUp()
 update_status ModuleGame::Update()
 {
 	App->renderer->Draw(fondo, 0, 0);
+	if (IsKeyPressed(KEY_LEFT)) {
+		// Aplica velocidad al motor para "subir"
+		pala_l_joint->SetMotorSpeed(-20.0f); // Velocidad negativa (anti-horario)
+	}
+	else {
+		// Aplica velocidad para "bajar"
+		pala_l_joint->SetMotorSpeed(10.0f);
+	}
+
 	if(IsKeyPressed(KEY_SPACE))
 	{
 		ray_on = !ray_on;
@@ -225,7 +252,14 @@ update_status ModuleGame::Update()
 	vec2f normal(0.0f, 0.0f);
 
 	// All draw functions ------------------------------------------------------
-
+	int x, y;
+	pala_l->GetPhysicPosition(x, y);
+	DrawTexturePro(pala_left, // La textura
+		Rectangle{ 0, 0, (float)pala_left.width, (float)pala_left.height }, // source
+		Rectangle{ (float)x, (float)y, (float)pala_left.width, (float)pala_left.height }, // dest
+		Vector2{ (float)pala_left.width / 2.0f, (float)pala_left.height / 2.0f }, // Origen (centro)
+		pala_l->GetRotation() * RAD2DEG, // ¡Rotación desde la física!
+		WHITE);
 
 	for (PhysicEntity* entity : entities)
 	{

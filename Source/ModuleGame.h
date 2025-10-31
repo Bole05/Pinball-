@@ -7,7 +7,7 @@
 
 #include "raylib.h"
 #include <vector>
-
+#include "Box2D/Box2D.h"
 class PhysBody;
 class PhysicEntity;
 
@@ -39,6 +39,9 @@ public:
 	Texture2D fondo;
 	Texture2D pala_right;
 	Texture2D pala_left;
+
+	b2RevoluteJoint* pala_l_joint; 
+	b2RevoluteJoint* pala_r_joint;
 
 	uint32 bonus_fx;
 
