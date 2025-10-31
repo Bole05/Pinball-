@@ -163,14 +163,20 @@ bool ModuleGame::Start()
 
 	App->renderer->camera.x = App->renderer->camera.y = 0;
 
-	circle = LoadTexture("Assets/wheel.png"); 
+	fondo = LoadTexture("Assets/game_back2.png");
+	pala_left= LoadTexture("Assets/boardL2.png");
+	pala_right= LoadTexture("Assets/boardR2.png");
+
+
+	circle = LoadTexture("Assets/ball0001.png"); 
 	box = LoadTexture("Assets/crate.png");
 	rick = LoadTexture("Assets/rick_head.png");
 	
 	bonus_fx = App->audio->LoadFx("Assets/bonus.wav");
 
+	
 	sensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH, 50);
-
+	pala_l = App->physics->CreateRectangle(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH);
 	return ret;
 }
 
@@ -185,6 +191,7 @@ bool ModuleGame::CleanUp()
 // Update: draw background
 update_status ModuleGame::Update()
 {
+	App->renderer->Draw(fondo, 0, 0);
 	if(IsKeyPressed(KEY_SPACE))
 	{
 		ray_on = !ray_on;
