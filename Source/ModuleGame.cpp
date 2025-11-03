@@ -94,62 +94,6 @@ private:
 
 };
 
-class Rick : public PhysicEntity
-{
-public:
-	// Pivot 0, 0
-	static constexpr int rick_head[64] = {
-			14, 36,
-			42, 40,
-			40, 0,
-			75, 30,
-			88, 4,
-			94, 39,
-			111, 36,
-			104, 58,
-			107, 62,
-			117, 67,
-			109, 73,
-			110, 85,
-			106, 91,
-			109, 99,
-			103, 104,
-			100, 115,
-			106, 121,
-			103, 125,
-			98, 126,
-			95, 137,
-			83, 147,
-			67, 147,
-			53, 140,
-			46, 132,
-			34, 136,
-			38, 126,
-			23, 123,
-			30, 114,
-			10, 102,
-			29, 90,
-			0, 75,
-			30, 62
-	};
-
-	Rick(ModulePhysics* physics, int _x, int _y, Module* _listener, Texture2D _texture)
-		: PhysicEntity(physics->CreateChain(GetMouseX() - 50, GetMouseY() - 100, rick_head, 64), _listener)
-		, texture(_texture)
-	{
-
-	}
-
-	void Update() override
-	{
-		int x, y;
-		body->GetPhysicPosition(x, y);
-		DrawTextureEx(texture, Vector2{ (float)x, (float)y }, body->GetRotation() * RAD2DEG, 1.0f, WHITE);
-	}
-
-private:
-	Texture2D texture;
-};
 
 
 
@@ -381,11 +325,11 @@ bool ModuleGame::Start()
 	App->physics->CreateChain(0, 0, game_back4, 34);
 
 	int game_back5[10] = {
-	388, 441,
-	411, 441,
-	412, 458,
-	387, 458,
-	387, 441
+	387, 448,
+	411, 448,
+	410, 456,
+	387, 456,
+	387, 449
 	};
 
 	for (int i = 0; i < 10; i++)
@@ -498,10 +442,6 @@ update_status ModuleGame::Update()
 		entities.emplace_back(new Box(App->physics, GetMouseX(), GetMouseY(), this, box));
 	}
 
-	if(IsKeyPressed(KEY_THREE))
-	{
-		entities.emplace_back(new Rick(App->physics, GetMouseX(), GetMouseY(), this, rick));
-	}
 
 	// Prepare for raycast ------------------------------------------------------
 	
