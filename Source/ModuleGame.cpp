@@ -5,6 +5,8 @@
 #include "ModuleAudio.h"
 #include "ModulePhysics.h"
 
+constexpr float PALA_SCALE = 0.25f;
+
 class PhysicEntity
 {
 protected:
@@ -34,7 +36,7 @@ class Circle : public PhysicEntity
 {
 public:
 	Circle(ModulePhysics* physics, int _x, int _y, Module* _listener, Texture2D _texture)
-		: PhysicEntity(physics->CreateCircle(_x, _y, 15), _listener)//radio de colision de la pelota
+		: PhysicEntity(physics->CreateCircle(_x, _y, 9), _listener)//radio de colision de la pelota
 		, texture(_texture)
 	{
 
@@ -45,13 +47,7 @@ public:
 		int x, y;
 		body->GetPhysicPosition(x, y);
 		Vector2 position{ (float)x, (float)y };
-		//float scale = 0.5f;
-		//Rectangle source = { 0.0f, 0.0f, (float)texture.width, (float)texture.height };
-		//Rectangle dest = { position.x, position.y, (float)texture.width * scale, (float)texture.height * scale };
-		//Vector2 origin = { (float)texture.width / 2.0f, (float)texture.height / 2.0f };
-		//float rotation = body->GetRotation() * RAD2DEG;
-		//DrawTexturePro(texture, source, dest, origin, rotation, WHITE);
-		float desired_radius = 15.0f;
+		float desired_radius = 9.0f;
 
 		// Calcula la escala para que el ancho de la textura coincida con el diámetro físico
 		float scale = (desired_radius * 2.0f) / (float)texture.width;
@@ -158,9 +154,7 @@ private:
 
 
 ModuleGame::ModuleGame(Application* app, bool start_enabled) : Module(app, start_enabled)
-{
-	ray_on = false;
-	sensed = false;
+{	sensed = false;
 }
 
 ModuleGame::~ModuleGame()
@@ -174,16 +168,21 @@ bool ModuleGame::Start()
 
 	App->renderer->camera.x = App->renderer->camera.y = 0;
 
+	//creacion de la textura de fondo
 	fondo = LoadTexture("Assets/game_back2.png");
-	//pala_left= LoadTexture("Assets/boardL2.png");
+	
 	////Image pala_leftt = LoadImageFromTexture(pala_left);
 	////ImageResize(&pala_leftt, 30, 30);
 	////UnloadTexture(pala_left);
 	////Texture2D resizedTexture = LoadTextureFromImage(pala_leftt);
-	//pala_right= LoadTexture("Assets/boardR2.png");
+	
+	//creacion de las texturas de las`palas
+	pala_right= LoadTexture("Assets/boardR2.png");
+	pala_left= LoadTexture("Assets/boardL2.png");
 
-
+	//creacion de la textura de la pelota
 	circle = LoadTexture("Assets/ball0001.png"); 
+
 	box = LoadTexture("Assets/crate.png");
 	rick = LoadTexture("Assets/rick_head.png");
 	
@@ -191,6 +190,71 @@ bool ModuleGame::Start()
 
 	
 	sensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH, 50);
+
+
+	// Tamaños físicos
+	int ancho_pala = (int)(pala_left.width * PALA_SCALE);
+	int alto_pala = (int)(pala_left.height * PALA_SCALE);
+
+	//// Pivote izquierdo
+	//PhysBody* pivote_L = App->physics->CreateRectangle(340, 395, 5, 5);
+	//pivote_L->body->SetType(b2_staticBody);
+
+	//// Pala izquierda
+	//pala_l = App->physics->CreateRectangle(340, 395, ancho_pala, alto_pala);
+	//pala_l->body->SetType(b2_dynamicBody);
+
+	//// Junta izquierda
+	//b2RevoluteJointDef jointDefL;
+	//jointDefL.Initialize(pivote_L->body, pala_l->body, pivote_L->body->GetWorldCenter());
+	//jointDefL.enableMotor = true;
+	//jointDefL.maxMotorTorque = 1000.0f;
+	//jointDefL.motorSpeed = 0.0f;
+	//jointDefL.enableLimit = true;
+	//jointDefL.lowerAngle = -0.25f * b2_pi;
+	//jointDefL.upperAngle = 0.20f * b2_pi;
+	//pala_l_joint = App->physics->CreateJoint(&jointDefL);
+
+	// Pivote izquierdo
+	PhysBody* pivote_L = App->physics->CreateRectangle(340, 395, 5, 5);
+	pivote_L->body->SetType(b2_staticBody);
+
+	// Pala izquierda desplazada
+	int offsetX = (int)(pala_left.width * PALA_SCALE / 2.0f);
+	// int offsetX = ancho_pala / 2;
+	pala_l = App->physics->CreateRectangle(360, 395, ancho_pala, alto_pala);
+	pala_l->body->SetType(b2_dynamicBody);
+
+	// Junta izquierda
+	b2RevoluteJointDef jointDefL;
+	jointDefL.Initialize(pivote_L->body, pala_l->body, pivote_L->body->GetWorldCenter());
+	jointDefL.enableMotor = true;
+	jointDefL.maxMotorTorque = 1000.0f;
+	jointDefL.motorSpeed = 0.0f;
+	jointDefL.enableLimit = true;
+	jointDefL.lowerAngle = -0.25f * b2_pi;
+	jointDefL.upperAngle = 0.20f * b2_pi;
+	pala_l_joint = App->physics->CreateJoint(&jointDefL);
+
+
+	// Pivote derecho
+	PhysBody* pivote_R = App->physics->CreateRectangle(460, 395, 5, 5);
+	pivote_R->body->SetType(b2_staticBody);
+
+	// Pala derecha
+	pala_r = App->physics->CreateRectangle(440, 395, ancho_pala, alto_pala);
+	pala_r->body->SetType(b2_dynamicBody);
+
+	// Junta derecha
+	b2RevoluteJointDef jointDefR;
+	jointDefR.Initialize(pivote_R->body, pala_r->body, pivote_R->body->GetWorldCenter());
+	jointDefR.enableMotor = true;
+	jointDefR.maxMotorTorque = 1000.0f;
+	jointDefR.motorSpeed = 0.0f;
+	jointDefR.enableLimit = true;
+	jointDefR.lowerAngle = -0.20f * b2_pi;
+	jointDefR.upperAngle = 0.25f * b2_pi;
+	pala_r_joint = App->physics->CreateJoint(&jointDefR);
 	//int ANCHO_FISICO_PALA = pala_left.width; 
 	//int ALTO_FISICO_PALA = pala_left.height;  
 
@@ -355,6 +419,66 @@ update_status ModuleGame::Update()
 	//	// Aplica velocidad para "bajar"
 	//	pala_l_joint->SetMotorSpeed(10.0f);
 	//}
+
+	// Control pala izquierda
+	if (IsKeyDown(KEY_LEFT)) {
+		pala_l_joint->SetMotorSpeed(-20.0f);
+	}
+	else {
+		pala_l_joint->SetMotorSpeed(10.0f);
+	}
+
+	// Control pala derecha
+	if (IsKeyDown(KEY_RIGHT)) {
+		pala_r_joint->SetMotorSpeed(20.0f);
+	}
+	else {
+		pala_r_joint->SetMotorSpeed(-10.0f);
+	}
+
+
+	int xL, yL;
+	pala_l->GetPhysicPosition(xL, yL);
+	// Calcular el centro de la textura de la pala (considerando el escalado)
+// Compensar el offset físico hacia la derecha
+	//float w = pala_left.width * PALA_SCALE;
+	//float h = pala_left.height * PALA_SCALE;
+
+	//DrawTexturePro(
+	//	pala_left,
+	//	Rectangle{ 0, 0, (float)pala_left.width, (float)pala_left.height },
+	//	Rectangle{ (float)(xL-30), (float)(yL-20), w, h },
+	//	Vector2{ 0.0f, h / 2.0f },
+	//	pala_l->GetRotation() * RAD2DEG,
+	//	WHITE);
+
+
+	float w = pala_left.width * PALA_SCALE;
+	float h = pala_left.height * PALA_SCALE;
+
+	// El cuerpo físico rota alrededor de su centro, no del borde
+	Vector2 origin = { w / 2.0f, h / 2.0f };
+
+	DrawTexturePro(
+		pala_left,
+		Rectangle{ 0, 0, (float)pala_left.width, (float)pala_left.height },
+		Rectangle{ (float)xL, (float)yL, w, h },
+		origin,
+		pala_l->GetRotation() * RAD2DEG,
+		WHITE);
+
+	int xR, yR;
+	pala_r->GetPhysicPosition(xR, yR);
+	DrawTexturePro(pala_right,
+		Rectangle{ 0, 0, (float)pala_right.width, (float)pala_right.height },
+		Rectangle{ (float)xR, (float)yR, (float)pala_right.width * PALA_SCALE, (float)pala_right.height * PALA_SCALE },
+		//Vector2{0.0f, (float)pala_right.width / 2.0f, (float)pala_right.height / 2.0f },
+		Vector2{ (float)pala_left.width * PALA_SCALE / 2.0f, (float)pala_left.height * PALA_SCALE / 2.0f },
+		pala_r->GetRotation() * RAD2DEG,
+		WHITE);
+	ray_on = false;
+
+
 
 	if(IsKeyPressed(KEY_SPACE))
 	{
