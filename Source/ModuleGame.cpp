@@ -126,7 +126,7 @@ bool ModuleGame::Start()
 	circleBody->listener = this;
 	//------------------------------Sistema Puntuación---------------------------------------------//
 
-	sensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH, 50);
+	sensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH, 35);
 
 	goalSensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, 20, 200, 20);
 	goalSensor->listener = this;
@@ -145,7 +145,6 @@ bool ModuleGame::Start()
 
 	// Pala izquierda desplazada
 	int offsetX = (int)(pala_left.width * PALA_SCALE / 2.0f);
-	// int offsetX = ancho_pala / 2;
 	pala_l = App->physics->CreateRectangle(360, 395, ancho_pala, alto_pala);
 	pala_l->body->SetType(b2_dynamicBody);
 
