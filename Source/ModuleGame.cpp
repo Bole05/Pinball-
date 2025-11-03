@@ -220,7 +220,8 @@ bool ModuleGame::Start()
 	//pala_l_joint = App->physics->CreateJoint(&jointDef);
 	
 
-
+	
+	//---------------------------------CREACIÓN FISICAS MAPA----------------------------------------//
 
 	int game_back1[20] = {
 	274, 121,
@@ -315,23 +316,18 @@ bool ModuleGame::Start()
 	}
 	App->physics->CreateChain(0, 0, game_back4, 34);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	int game_back5[10] = {
+	388, 441,
+	411, 441,
+	412, 458,
+	387, 458,
+	387, 441
+	};
+	for (int i = 0; i < 10; i++)
+	{
+		PIXEL_TO_METERS(game_back5[i]);
+	}
+	App->physics->CreateChain(0, 0, game_back5, 10);
 
 	return ret;
 }
