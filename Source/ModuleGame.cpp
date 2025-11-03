@@ -176,10 +176,6 @@ bool ModuleGame::Start()
 	////UnloadTexture(pala_left);
 	////Texture2D resizedTexture = LoadTextureFromImage(pala_leftt);
 	
-	//creacion de las texturas de las`palas
-	pala_right= LoadTexture("Assets/boardR2.png");
-	pala_left= LoadTexture("Assets/boardL2.png");
-
 	//creacion de la textura de la pelota
 	circle = LoadTexture("Assets/ball0001.png"); 
 
@@ -191,29 +187,12 @@ bool ModuleGame::Start()
 	
 	sensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH, 50);
 
-
+	//-------------------------------CREACION DE COLISIONES DE LAS PALAS---------------------------//
+	pala_right = LoadTexture("Assets/boardR2.png");
+	pala_left = LoadTexture("Assets/boardL2.png");
 	// Tamaños físicos
 	int ancho_pala = (int)(pala_left.width * PALA_SCALE);
 	int alto_pala = (int)(pala_left.height * PALA_SCALE);
-
-	//// Pivote izquierdo
-	//PhysBody* pivote_L = App->physics->CreateRectangle(340, 395, 5, 5);
-	//pivote_L->body->SetType(b2_staticBody);
-
-	//// Pala izquierda
-	//pala_l = App->physics->CreateRectangle(340, 395, ancho_pala, alto_pala);
-	//pala_l->body->SetType(b2_dynamicBody);
-
-	//// Junta izquierda
-	//b2RevoluteJointDef jointDefL;
-	//jointDefL.Initialize(pivote_L->body, pala_l->body, pivote_L->body->GetWorldCenter());
-	//jointDefL.enableMotor = true;
-	//jointDefL.maxMotorTorque = 1000.0f;
-	//jointDefL.motorSpeed = 0.0f;
-	//jointDefL.enableLimit = true;
-	//jointDefL.lowerAngle = -0.25f * b2_pi;
-	//jointDefL.upperAngle = 0.20f * b2_pi;
-	//pala_l_joint = App->physics->CreateJoint(&jointDefL);
 
 	// Pivote izquierdo
 	PhysBody* pivote_L = App->physics->CreateRectangle(340, 395, 5, 5);
@@ -255,35 +234,7 @@ bool ModuleGame::Start()
 	jointDefR.lowerAngle = -0.20f * b2_pi;
 	jointDefR.upperAngle = 0.25f * b2_pi;
 	pala_r_joint = App->physics->CreateJoint(&jointDefR);
-	//int ANCHO_FISICO_PALA = pala_left.width; 
-	//int ALTO_FISICO_PALA = pala_left.height;  
-
-	//int PIVOTE_X = 340; // El '460' que ya tenías
-	//int PIVOTE_Y = 395; // El '295' que ya tenías
-
-	//PhysBody* pivote_L = App->physics->CreateRectangle(PIVOTE_X, PIVOTE_Y, 5, 5);
-	//pivote_L->body->SetType(b2_staticBody);
-
-
-	//int pala_center_x = PIVOTE_X;
-	//int pala_center_y = PIVOTE_Y;
-
-	//pala_l = App->physics->CreateRectangle(pala_center_x, pala_center_y, ANCHO_FISICO_PALA/2, ALTO_FISICO_PALA/2);
-	//pala_l->body->SetType(b2_dynamicBody);
-
-	//// 6. Crea la junta (esto lo tenías perfecto)
-	//b2RevoluteJointDef jointDef;
-	//jointDef.Initialize(pivote_L->body, pala_l->body, pivote_L->body->GetWorldCenter());
-	//jointDef.enableMotor = true;
-	//jointDef.maxMotorTorque = 1000.0f;
-	//jointDef.motorSpeed = 0.0f;
-	//jointDef.enableLimit = true;
-	//jointDef.lowerAngle = -0.25f * b2_pi;
-	//jointDef.upperAngle = 0.20f * b2_pi;
-
-	//pala_l_joint = App->physics->CreateJoint(&jointDef);
-	
-
+	//---------------------------------FIN COLISIONES PALAS-----------------------------------------//
 	
 	//---------------------------------CREACIÓN FISICAS MAPA----------------------------------------//
 
@@ -394,7 +345,7 @@ bool ModuleGame::Start()
 	}
 	App->physics->CreateChain(0, 0, game_back5, 10);
 
-	//-----------------------------------------------------------------------------------------------//
+	//------------------------------------------------FIN FISICA MAPA--------------------------------------------//
 	return ret;
 }
 
@@ -411,15 +362,7 @@ update_status ModuleGame::Update()
 {
 	App->renderer->Draw(fondo, 0, 0);
 
-	//if (IsKeyPressed(KEY_LEFT)) {
-	//	// Aplica velocidad al motor para "subir"
-	//	pala_l_joint->SetMotorSpeed(-20.0f); // Velocidad negativa (anti-horario)
-	//}
-	//else {
-	//	// Aplica velocidad para "bajar"
-	//	pala_l_joint->SetMotorSpeed(10.0f);
-	//}
-
+	//-------------------------------CONTROL DE LAS PALAS-------------------------//
 	// Control pala izquierda
 	if (IsKeyDown(KEY_LEFT)) {
 		pala_l_joint->SetMotorSpeed(-20.0f);
@@ -435,23 +378,11 @@ update_status ModuleGame::Update()
 	else {
 		pala_r_joint->SetMotorSpeed(-10.0f);
 	}
+	//------------------------------FIN DE LOS CONTROLES PALAS------------------//
 
-
+	//------------------------------TEXTURA DE LAS PALAS------------------------//
 	int xL, yL;
 	pala_l->GetPhysicPosition(xL, yL);
-	// Calcular el centro de la textura de la pala (considerando el escalado)
-// Compensar el offset físico hacia la derecha
-	//float w = pala_left.width * PALA_SCALE;
-	//float h = pala_left.height * PALA_SCALE;
-
-	//DrawTexturePro(
-	//	pala_left,
-	//	Rectangle{ 0, 0, (float)pala_left.width, (float)pala_left.height },
-	//	Rectangle{ (float)(xL-30), (float)(yL-20), w, h },
-	//	Vector2{ 0.0f, h / 2.0f },
-	//	pala_l->GetRotation() * RAD2DEG,
-	//	WHITE);
-
 
 	float w = pala_left.width * PALA_SCALE;
 	float h = pala_left.height * PALA_SCALE;
@@ -477,7 +408,7 @@ update_status ModuleGame::Update()
 		pala_r->GetRotation() * RAD2DEG,
 		WHITE);
 	ray_on = false;
-
+	//----------------------------------FIN TEXTURA PALAS------------------------//
 
 
 	if(IsKeyPressed(KEY_SPACE))
