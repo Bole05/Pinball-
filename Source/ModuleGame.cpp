@@ -34,7 +34,7 @@ class Circle : public PhysicEntity
 {
 public:
 	Circle(ModulePhysics* physics, int _x, int _y, Module* _listener, Texture2D _texture)
-		: PhysicEntity(physics->CreateCircle(_x, _y, 25), _listener)
+		: PhysicEntity(physics->CreateCircle(_x, _y, 15), _listener)//radio de colision de la pelota
 		, texture(_texture)
 	{
 
@@ -45,11 +45,22 @@ public:
 		int x, y;
 		body->GetPhysicPosition(x, y);
 		Vector2 position{ (float)x, (float)y };
-		float scale = 1.0f;
+		//float scale = 0.5f;
+		//Rectangle source = { 0.0f, 0.0f, (float)texture.width, (float)texture.height };
+		//Rectangle dest = { position.x, position.y, (float)texture.width * scale, (float)texture.height * scale };
+		//Vector2 origin = { (float)texture.width / 2.0f, (float)texture.height / 2.0f };
+		//float rotation = body->GetRotation() * RAD2DEG;
+		//DrawTexturePro(texture, source, dest, origin, rotation, WHITE);
+		float desired_radius = 15.0f;
+
+		// Calcula la escala para que el ancho de la textura coincida con el diámetro físico
+		float scale = (desired_radius * 2.0f) / (float)texture.width;
+
 		Rectangle source = { 0.0f, 0.0f, (float)texture.width, (float)texture.height };
 		Rectangle dest = { position.x, position.y, (float)texture.width * scale, (float)texture.height * scale };
-		Vector2 origin = { (float)texture.width / 2.0f, (float)texture.height / 2.0f};
+		Vector2 origin = { (float)texture.width * scale / 2.0f, (float)texture.height * scale / 2.0f };
 		float rotation = body->GetRotation() * RAD2DEG;
+
 		DrawTexturePro(texture, source, dest, origin, rotation, WHITE);
 	}
 
@@ -164,12 +175,12 @@ bool ModuleGame::Start()
 	App->renderer->camera.x = App->renderer->camera.y = 0;
 
 	fondo = LoadTexture("Assets/game_back2.png");
-	pala_left= LoadTexture("Assets/boardL2.png");
-	//Image pala_leftt = LoadImageFromTexture(pala_left);
-	//ImageResize(&pala_leftt, 30, 30);
-	//UnloadTexture(pala_left);
-	//Texture2D resizedTexture = LoadTextureFromImage(pala_leftt);
-	pala_right= LoadTexture("Assets/boardR2.png");
+	//pala_left= LoadTexture("Assets/boardL2.png");
+	////Image pala_leftt = LoadImageFromTexture(pala_left);
+	////ImageResize(&pala_leftt, 30, 30);
+	////UnloadTexture(pala_left);
+	////Texture2D resizedTexture = LoadTextureFromImage(pala_leftt);
+	//pala_right= LoadTexture("Assets/boardR2.png");
 
 
 	circle = LoadTexture("Assets/ball0001.png"); 
@@ -180,33 +191,33 @@ bool ModuleGame::Start()
 
 	
 	sensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH, 50);
-	int ANCHO_FISICO_PALA = pala_left.width; 
-	int ALTO_FISICO_PALA = pala_left.height;  
+	//int ANCHO_FISICO_PALA = pala_left.width; 
+	//int ALTO_FISICO_PALA = pala_left.height;  
 
-	int PIVOTE_X = 340; // El '460' que ya tenías
-	int PIVOTE_Y = 395; // El '295' que ya tenías
+	//int PIVOTE_X = 340; // El '460' que ya tenías
+	//int PIVOTE_Y = 395; // El '295' que ya tenías
 
-	PhysBody* pivote_L = App->physics->CreateRectangle(PIVOTE_X, PIVOTE_Y, 5, 5);
-	pivote_L->body->SetType(b2_staticBody);
+	//PhysBody* pivote_L = App->physics->CreateRectangle(PIVOTE_X, PIVOTE_Y, 5, 5);
+	//pivote_L->body->SetType(b2_staticBody);
 
 
-	int pala_center_x = PIVOTE_X;
-	int pala_center_y = PIVOTE_Y;
+	//int pala_center_x = PIVOTE_X;
+	//int pala_center_y = PIVOTE_Y;
 
-	pala_l = App->physics->CreateRectangle(pala_center_x, pala_center_y, ANCHO_FISICO_PALA/2, ALTO_FISICO_PALA/2);
-	pala_l->body->SetType(b2_dynamicBody);
+	//pala_l = App->physics->CreateRectangle(pala_center_x, pala_center_y, ANCHO_FISICO_PALA/2, ALTO_FISICO_PALA/2);
+	//pala_l->body->SetType(b2_dynamicBody);
 
-	// 6. Crea la junta (esto lo tenías perfecto)
-	b2RevoluteJointDef jointDef;
-	jointDef.Initialize(pivote_L->body, pala_l->body, pivote_L->body->GetWorldCenter());
-	jointDef.enableMotor = true;
-	jointDef.maxMotorTorque = 1000.0f;
-	jointDef.motorSpeed = 0.0f;
-	jointDef.enableLimit = true;
-	jointDef.lowerAngle = -0.25f * b2_pi;
-	jointDef.upperAngle = 0.20f * b2_pi;
+	//// 6. Crea la junta (esto lo tenías perfecto)
+	//b2RevoluteJointDef jointDef;
+	//jointDef.Initialize(pivote_L->body, pala_l->body, pivote_L->body->GetWorldCenter());
+	//jointDef.enableMotor = true;
+	//jointDef.maxMotorTorque = 1000.0f;
+	//jointDef.motorSpeed = 0.0f;
+	//jointDef.enableLimit = true;
+	//jointDef.lowerAngle = -0.25f * b2_pi;
+	//jointDef.upperAngle = 0.20f * b2_pi;
 
-	pala_l_joint = App->physics->CreateJoint(&jointDef);
+	//pala_l_joint = App->physics->CreateJoint(&jointDef);
 
 	return ret;
 }
@@ -224,14 +235,14 @@ update_status ModuleGame::Update()
 {
 	App->renderer->Draw(fondo, 0, 0);
 
-	if (IsKeyPressed(KEY_LEFT)) {
-		// Aplica velocidad al motor para "subir"
-		pala_l_joint->SetMotorSpeed(-20.0f); // Velocidad negativa (anti-horario)
-	}
-	else {
-		// Aplica velocidad para "bajar"
-		pala_l_joint->SetMotorSpeed(10.0f);
-	}
+	//if (IsKeyPressed(KEY_LEFT)) {
+	//	// Aplica velocidad al motor para "subir"
+	//	pala_l_joint->SetMotorSpeed(-20.0f); // Velocidad negativa (anti-horario)
+	//}
+	//else {
+	//	// Aplica velocidad para "bajar"
+	//	pala_l_joint->SetMotorSpeed(10.0f);
+	//}
 
 	if(IsKeyPressed(KEY_SPACE))
 	{
@@ -265,17 +276,17 @@ update_status ModuleGame::Update()
 
 	vec2f normal(0.0f, 0.0f);
 
-	int x, y;
-	pala_l->GetPhysicPosition(x, y);
+	//int x, y;
+	//pala_l->GetPhysicPosition(x, y);
 
-	
-	// -- FIN DE LOS AJUSTES --
-	DrawTexturePro(pala_left,
-		Rectangle{ 0, 0, (float)pala_left.width, (float)pala_left.height },
-		Rectangle{ (float)x, (float)y, (float)pala_left.width*0.2f, (float)pala_left.height*0.2f },
-		Vector2{ (float)pala_left.width / 2.0f, (float)pala_left.height / 2.0f },
-		pala_l->GetRotation() * RAD2DEG, 
-		WHITE);
+	//
+	//// -- FIN DE LOS AJUSTES --
+	//DrawTexturePro(pala_left,
+	//	Rectangle{ 0, 0, (float)pala_left.width, (float)pala_left.height },
+	//	Rectangle{ (float)x, (float)y, (float)pala_left.width*0.2f, (float)pala_left.height*0.2f },
+	//	Vector2{ (float)pala_left.width / 2.0f, (float)pala_left.height / 2.0f },
+	//	pala_l->GetRotation() * RAD2DEG, 
+	//	WHITE);
 
 
 
