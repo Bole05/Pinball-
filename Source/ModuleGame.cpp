@@ -103,7 +103,7 @@ ModuleGame::ModuleGame(Application* app, bool start_enabled) : Module(app, start
 ModuleGame::~ModuleGame()
 {}
 
-// Load assets
+//-----------------------------------------------------------START--------------------------------------------------//
 bool ModuleGame::Start()
 {
 	LOG("Loading Intro assets");
@@ -119,7 +119,8 @@ bool ModuleGame::Start()
 
 	box = LoadTexture("Assets/crate.png");
 	
-	
+	menuTexture = LoadTexture("Assets/menu_back.png"); // asegúrate de tener esta imagen
+
 	bonus_fx = App->audio->LoadFx("Assets/bonus.wav");
 
 	circleBody = App->physics->CreateCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 9);
@@ -165,7 +166,7 @@ bool ModuleGame::Start()
 	pivote_R->body->SetType(b2_staticBody);
 
 	// Pala derecha
-	pala_r = App->physics->CreateRectangle(440, 395, ancho_pala, alto_pala);
+	pala_r = App->physics->CreateRectangle(438, 395, ancho_pala, alto_pala);
 	pala_r->body->SetType(b2_dynamicBody);
 
 	// Junta derecha
@@ -297,13 +298,34 @@ bool ModuleGame::Start()
 bool ModuleGame::CleanUp()
 {
 	LOG("Unloading Intro scene");
-
+	UnloadTexture(menuTexture);
 	return true;
 }
 
 // Update: draw background
 update_status ModuleGame::Update()
 {
+	if (!gameStarted)
+	{
+		// --- ESTADO DE MENÚ ---
+		// Se dibuja la pantalla del menú y se maneja la entrada para empezar
+		DrawTexture(menuTexture, 0, 0, WHITE);
+		DrawText("Presiona ESPACIO para jugar", 200, 400, 30, WHITE);
+
+		if (IsKeyPressed(KEY_SPACE))
+		{
+			gameStarted = true;
+			// Aseguramos que la pelota esté en posición inicial al empezar
+			ResetBall();
+		}
+
+		// Devolvemos el control inmediatamente para NO dibujar el resto del juego
+		return UPDATE_CONTINUE;
+	}
+
+	// --- ESTADO DE JUEGO (Solo se ejecuta si gameStarted == true) ---
+
+	// 1. Dibujar el fondo del juego
 	App->renderer->Draw(fondo, 0, 0);
 	
 

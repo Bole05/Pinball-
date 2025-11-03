@@ -14,6 +14,10 @@ class PhysicEntity;
 
 class ModuleGame : public Module
 {
+private:
+	bool gameStarted = false;
+	Texture2D menuTexture;
+
 public:
 	ModuleGame(Application* app, bool start_enabled = true);
 	~ModuleGame();
