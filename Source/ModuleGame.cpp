@@ -95,10 +95,9 @@ private:
 };
 
 
-
-
 ModuleGame::ModuleGame(Application* app, bool start_enabled) : Module(app, start_enabled)
 {	sensed = false;
+	resetPending = false;
 }
 
 ModuleGame::~ModuleGame()
@@ -115,21 +114,23 @@ bool ModuleGame::Start()
 	//creacion de la textura de fondo
 	fondo = LoadTexture("Assets/game_back2.png");
 	
-	////Image pala_leftt = LoadImageFromTexture(pala_left);
-	////ImageResize(&pala_leftt, 30, 30);
-	////UnloadTexture(pala_left);
-	////Texture2D resizedTexture = LoadTextureFromImage(pala_leftt);
-	
 	//creacion de la textura de la pelota
 	circle = LoadTexture("Assets/ball0001.png"); 
 
 	box = LoadTexture("Assets/crate.png");
-	rick = LoadTexture("Assets/rick_head.png");
+	
 	
 	bonus_fx = App->audio->LoadFx("Assets/bonus.wav");
 
-	
+	circleBody = App->physics->CreateCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 9);
+	circleBody->listener = this;
+	//------------------------------Sistema Puntuación---------------------------------------------//
+
 	sensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH, 50);
+
+	goalSensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, 20, 200, 20);
+	goalSensor->listener = this;
+
 
 	//-------------------------------CREACION DE COLISIONES DE LAS PALAS---------------------------//
 	pala_right = LoadTexture("Assets/boardR2.png");
@@ -305,6 +306,7 @@ bool ModuleGame::CleanUp()
 update_status ModuleGame::Update()
 {
 	App->renderer->Draw(fondo, 0, 0);
+	
 
 	//-------------------------------CONTROL DE LAS PALAS-------------------------//
 	// Control pala izquierda
@@ -355,6 +357,10 @@ update_status ModuleGame::Update()
 	//----------------------------------FIN TEXTURA PALAS------------------------//
 
 
+	//----------------------------------Puntuación-------------------------------//
+	DrawText(TextFormat("Score: %i", score), 682, 99, 23, WHITE);
+	//--------------------------------------------------------------------------//
+
 	if(IsKeyPressed(KEY_SPACE))
 	{
 		ray_on = !ray_on;
@@ -367,6 +373,7 @@ update_status ModuleGame::Update()
 		entities.emplace_back(new Circle(App->physics, GetMouseX(), GetMouseY(), this, circle));
 		
 	}
+
 
 	if(IsKeyPressed(KEY_TWO))
 	{
@@ -383,20 +390,6 @@ update_status ModuleGame::Update()
 
 	vec2f normal(0.0f, 0.0f);
 
-	//int x, y;
-	//pala_l->GetPhysicPosition(x, y);
-
-	//
-	//// -- FIN DE LOS AJUSTES --
-	//DrawTexturePro(pala_left,
-	//	Rectangle{ 0, 0, (float)pala_left.width, (float)pala_left.height },
-	//	Rectangle{ (float)x, (float)y, (float)pala_left.width*0.2f, (float)pala_left.height*0.2f },
-	//	Vector2{ (float)pala_left.width / 2.0f, (float)pala_left.height / 2.0f },
-	//	pala_l->GetRotation() * RAD2DEG, 
-	//	WHITE);
-
-
-
 	for (PhysicEntity* entity : entities)
 	{
 		entity->Update();
@@ -409,7 +402,6 @@ update_status ModuleGame::Update()
 			}
 		}
 	}
-	
 
 	// ray -----------------
 	if(ray_on == true)
@@ -426,10 +418,45 @@ update_status ModuleGame::Update()
 		}
 	}
 
+	if (resetPending)
+	{
+		ResetBall();
+		resetPending = false;
+	}
+
+
 	return UPDATE_CONTINUE;
 }
 
+void ModuleGame::ResetBall()
+{
+	if (circleBody != nullptr)
+	{
+		circleBody->body->SetTransform(b2Vec2(PIXEL_TO_METERS(SCREEN_WIDTH / 2),PIXEL_TO_METERS(SCREEN_HEIGHT / 2)), 0);
+		circleBody->body->SetLinearVelocity(b2Vec2_zero);
+		circleBody->body->SetAngularVelocity(0);
+
+		// Empuje inicial hacia abajo
+		circleBody->body->SetLinearVelocity(b2Vec2(0, 3));
+	}
+}
+
+
+
 void ModuleGame::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 {
-	App->audio->PlayFx(bonus_fx);
+
+	if (bodyA == sensor || bodyB == sensor)
+	{
+		// ?? NUEVO — marcar para resetear en el siguiente frame
+		resetPending = true;
+	}
+
+	if (bodyA == goalSensor || bodyB == goalSensor)
+	{
+		score++;
+		App->audio->PlayFx(bonus_fx);
+		LOG("¡Gol! Puntuación: %d", score);
+		resetPending = true;  // ?? también aquí
+	}
 }

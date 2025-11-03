@@ -22,6 +22,7 @@ public:
 	update_status Update();
 	bool CleanUp();
 	void OnCollision(PhysBody* bodyA, PhysBody* bodyB);
+	void ResetBall();
 
 public:
 
@@ -30,8 +31,11 @@ public:
 	PhysBody* sensor;
 	PhysBody* pala_r;
 	PhysBody* pala_l;
-
+	PhysBody* goalSensor;
+	PhysBody* circleBody;
 	bool sensed;
+	bool resetPending;
+	
 
 	Texture2D circle;
 	Texture2D box;
@@ -47,4 +51,5 @@ public:
 
 	vec2<int> ray;
 	bool ray_on;
+	int score = -4;
 };
