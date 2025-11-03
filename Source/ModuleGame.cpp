@@ -218,6 +218,120 @@ bool ModuleGame::Start()
 	//jointDef.upperAngle = 0.20f * b2_pi;
 
 	//pala_l_joint = App->physics->CreateJoint(&jointDef);
+	
+
+
+
+	int game_back1[20] = {
+	274, 121,
+	303, 142,
+	303, 340,
+	340, 383,
+	331, 398,
+	291, 354,
+	289, 154,
+	267, 140,
+	266, 127,
+	273, 121
+	};
+
+
+	for (int i = 0; i < 20; i++)
+	{
+		PIXEL_TO_METERS(game_back1[i]);
+	}
+	App->physics->CreateChain(0, 0, game_back1, 20);
+
+
+
+	int game_back2[20] = {
+	527, 121,
+	529, 140,
+	507, 152,
+	507, 349,
+	468, 397,
+	460, 391,
+	457, 383,
+	493, 337,
+	491, 142,
+	526, 121
+	};
+	for (int i = 0; i < 20; i++)
+{
+	PIXEL_TO_METERS(game_back2[i]);
+}
+	App->physics->CreateChain(0, 0, game_back2, 20);
+
+
+	int game_back3[36] = {
+	500, 35,
+	512, 17,
+	511, 10,
+	287, 10,
+	286, 15,
+	296, 34,
+	275, 35,
+	253, 47,
+	246, 55,
+	240, 70,
+	240, 478,
+	558, 478,
+	558, 118,
+	558, 71,
+	548, 53,
+	535, 41,
+	521, 36,
+	501, 35
+	};
+	for (int i = 0; i < 36; i++)
+	{
+		PIXEL_TO_METERS(game_back3[i]);
+	}
+	App->physics->CreateChain(0, 0, game_back3, 36);
+
+	int game_back4[34] = {
+		489, 47,
+		490, 37,
+		498, 19,
+		301, 20,
+		309, 37,
+		311, 47,
+		277, 47,
+		264, 53,
+		255, 59,
+		246, 74,
+		247, 461,
+		551, 463,
+		551, 82,
+		546, 67,
+		537, 55,
+		521, 48,
+		490, 47
+	};
+
+	for (int i = 0; i < 34; i++)
+	{
+		PIXEL_TO_METERS(game_back4[i]);
+	}
+	App->physics->CreateChain(0, 0, game_back4, 34);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	return ret;
 }

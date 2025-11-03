@@ -155,6 +155,7 @@ PhysBody* ModulePhysics::CreateRectangleSensor(int x, int y, int width, int heig
 
 PhysBody* ModulePhysics::CreateChain(int x, int y, const int* points, int size)
 {
+	if (size < 6 || size % 2 != 0) return nullptr;
 	PhysBody* pbody = new PhysBody();
 
 	b2BodyDef body;
@@ -180,7 +181,7 @@ PhysBody* ModulePhysics::CreateChain(int x, int y, const int* points, int size)
 
 	b->CreateFixture(&fixture);
 
-	delete p;
+	delete[] p;
 
 	pbody->body = b;
 	pbody->width = pbody->height = 0;
