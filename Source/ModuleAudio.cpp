@@ -10,11 +10,23 @@ ModuleAudio::ModuleAudio(Application* app, bool start_enabled) : Module(app, sta
 {
 	fx_count = 0;
 	music = Music{ 0 };
+
+	flipperHitFx = 0;
+	bumperHitFx = 0;
+	ballLostFx = 0;
+	bonusFx = 0;
+	comboCompleteFx = 0;
+
+	masterVolume = 1.0f;
+	sfxVolume = 1.0f;
+	musicVolume = 0.5f;
 }
 
 // Destructor
 ModuleAudio::~ModuleAudio()
-{}
+{
+}
+
 
 // Called before render is available
 bool ModuleAudio::Init()
@@ -22,11 +34,30 @@ bool ModuleAudio::Init()
 	LOG("Loading Audio Mixer");
 	bool ret = true;
 
-    LOG("Loading raylib audio system");
+	LOG("Loading raylib audio system");
 
-    InitAudioDevice();
+	InitAudioDevice();
+
+	// Load pinball SFX
+	flipperHitFx = LoadFx("assets/audio/flipper_hit.wav");
+	bumperHitFx = LoadFx("assets/audio/bumper_hit.wav");
+	ballLostFx = LoadFx("assets/audio/ball_lost.wav");
+	bonusFx = LoadFx("assets/audio/bonus.wav");
+	comboCompleteFx = LoadFx("assets/audio/combo_complete.wav");
+
+	PlayMusic("assets/audio/pinball_theme.wav");
 
 	return ret;
+}
+
+update_status ModuleAudio::Update()
+{
+	if (music.stream.buffer != NULL)
+	{
+		UpdateMusicStream(music);
+	}
+
+	return UPDATE_CONTINUE;
 }
 
 // Called before quitting
@@ -34,20 +65,20 @@ bool ModuleAudio::CleanUp()
 {
 	LOG("Freeing sound FX, closing Mixer and Audio subsystem");
 
-    // Unload sounds
+	// Unload sounds
 	for (unsigned int i = 0; i < fx_count; i++)
 	{
 		UnloadSound(fx[i]);
 	}
 
-    // Unload music
-	if (IsMusicReady(music))
+	// Unload music
+	if (music.stream.buffer != NULL)
 	{
 		StopMusicStream(music);
 		UnloadMusicStream(music);
 	}
 
-    CloseAudioDevice();
+	CloseAudioDevice();
 
 	return true;
 }
@@ -55,15 +86,25 @@ bool ModuleAudio::CleanUp()
 // Play a music file
 bool ModuleAudio::PlayMusic(const char* path, float fade_time)
 {
-	if(IsEnabled() == false)
+	if (IsEnabled() == false)
 		return false;
 
 	bool ret = true;
-	
-    StopMusicStream(music);
-    music = LoadMusicStream(path);
-    
-    PlayMusicStream(music);
+
+	StopMusicStream(music);
+	music = LoadMusicStream(path);
+
+	if (music.stream.buffer != NULL)
+	{
+		::SetMusicVolume(music, musicVolume * masterVolume);
+		PlayMusicStream(music);
+		LOG("Successfully playing %s", path);
+	}
+	else
+	{
+		LOG("Failed to load music: %s", path);
+		ret = false;
+	}
 
 	LOG("Successfully playing %s", path);
 
@@ -73,21 +114,21 @@ bool ModuleAudio::PlayMusic(const char* path, float fade_time)
 // Load WAV
 unsigned int ModuleAudio::LoadFx(const char* path)
 {
-	if(IsEnabled() == false)
+	if (IsEnabled() == false)
 		return 0;
 
 	unsigned int ret = 0;
 
 	Sound sound = LoadSound(path);
 
-	if(sound.stream.buffer == NULL)
+	if (sound.stream.buffer == NULL)
 	{
 		LOG("Cannot load sound: %s", path);
 	}
 	else
 	{
-        fx[fx_count] = sound;
-		ret = fx_count++;
+		fx[fx_count++] = sound;
+		ret = fx_count;
 	}
 
 	return ret;
@@ -103,7 +144,127 @@ bool ModuleAudio::PlayFx(unsigned int id, int repeat)
 
 	bool ret = false;
 
-	if(id < fx_count) PlaySound(fx[id]);
+	if (id > 0 && id <= fx_count)
+	{
+		SetSoundVolume(fx[id - 1], sfxVolume * masterVolume);
+		PlaySound(fx[id - 1]);
+		ret = true;
+	}
 
 	return ret;
+}
+
+void ModuleAudio::PlayFlipperHit(float impactForce)
+{
+	PlayFxWithVariation(flipperHitFx, impactForce);
+}
+
+void ModuleAudio::PlayBumperHit(float impactForce)
+{
+	PlayFxWithVariation(bumperHitFx, impactForce);
+}
+
+void ModuleAudio::PlayBonusSound()
+{
+	PlayFx(bonusFx);
+}
+
+void ModuleAudio::PlayComboComplete()
+{
+	PlayFx(comboCompleteFx);
+}
+
+void ModuleAudio::PlayBallLost()
+{
+	PlayFx(ballLostFx);
+}
+
+void ModuleAudio::PlayFxWithPitch(unsigned int id, float pitch)
+{
+	if (IsEnabled() == false || id == 0 || id > fx_count)
+		return;
+
+	if (pitch < 0.1f) pitch = 0.1f;
+	if (pitch > 2.0f) pitch = 2.0f;
+
+	SetSoundPitch(fx[id - 1], pitch);
+	PlayFx(id);
+	SetSoundPitch(fx[id - 1], 1.0f);
+}
+
+void ModuleAudio::PlayFxWithVolume(unsigned int id, float volume)
+{
+	if (IsEnabled() == false || id == 0 || id > fx_count)
+		return;
+
+	if (volume < 0.0f) volume = 0.0f;
+	if (volume > 1.0f) volume = 1.0f;
+
+	SetSoundVolume(fx[id - 1], volume * sfxVolume * masterVolume);
+	PlaySound(fx[id - 1]);
+}
+
+void ModuleAudio::PlayFxWithVariation(unsigned int id, float impactForce)
+{
+	if (IsEnabled() == false || id == 0 || id > fx_count)
+		return;
+
+	if (impactForce < 0.0f) impactForce = 0.0f;
+	if (impactForce > 1.0f) impactForce = 1.0f;
+
+	// Vary pitch: 0.8 to 1.2 based on impact
+	float pitch = 0.8f + (impactForce * 0.4f);
+
+	// Vary volume: 0.6 to 1.0 based on impact
+	float volume = 0.6f + (impactForce * 0.4f);
+
+	SetSoundPitch(fx[id - 1], pitch);
+	SetSoundVolume(fx[id - 1], volume * sfxVolume * masterVolume);
+	PlaySound(fx[id - 1]);
+
+	SetSoundPitch(fx[id - 1], 1.0f);
+}
+
+void ModuleAudio::SetMasterVolume(float volume)
+{
+	if (volume < 0.0f) volume = 0.0f;
+	if (volume > 1.0f) volume = 1.0f;
+
+	masterVolume = volume;
+	::SetMasterVolume(masterVolume);
+
+	if (music.stream.buffer != NULL)
+	{
+		::SetMusicVolume(music, musicVolume * masterVolume);
+	}
+}
+
+void ModuleAudio::SetSFXVolume(float volume)
+{
+	if (volume < 0.0f) volume = 0.0f;
+	if (volume > 1.0f) volume = 1.0f;
+
+	sfxVolume = volume;
+}
+
+void ModuleAudio::SetMusicVolume(float volume)
+{
+	if (volume < 0.0f) volume = 0.0f;
+	if (volume > 1.0f) volume = 1.0f;
+
+	musicVolume = volume;
+
+	if (music.stream.buffer != NULL)
+	{
+		::SetMusicVolume(music, musicVolume * masterVolume);
+	}
+}
+
+bool IsMusicValid(Music music)
+{
+	return ((music.ctxData != NULL) &&          // Validate context loaded
+		(music.frameCount > 0) &&           // Validate audio frame count
+		(music.stream.sampleRate > 0) &&    // Validate sample rate is supported
+		(music.stream.sampleSize > 0) &&    // Validate sample size is supported
+		(music.stream.channels > 0));       // Validate number of channels supported
 }
