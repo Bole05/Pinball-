@@ -1,0 +1,72 @@
+# Nombre del flujo de trabajo
+name: Build and Release Pinball Project
+
+# Eventos que disparan el flujo de trabajo
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - main
+
+# Definición de los trabajos a ejecutar
+jobs:
+  build:
+    name: Build Project
+    runs-on: windows-latest
+
+    steps:
+      # 1. Descarga el código del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Configura MSBuild
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # 3. Compila la solución
+      - name: Build solution
+        run: msbuild ./PhysicsGame.sln /p:Configuration=Release
+
+      # 5. Crea una carpeta para guardar los archivos del juego
+      - name: Create artifact directory
+        run: mkdir artifact/PhysicsGame
+
+      # 6. Copia el ejecutable y las librerías (ESTE PASO FALLARÁ)
+      - name: Copy build files to artifact directory
+        run: |
+          copy Build\PhysicsGame\Release\Win32\PhysicsGame.exe artifact\PhysicsGame
+
+      # 7. Sube los archivos compilados como un "artefacto"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pinball-build
+          path: artifact/
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pinball-build
+
+      - name: Zip artifact for release
+        run: zip -r Pinball-Release.zip .
+
+      - name: Create a GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: "Versión ${{ github.ref_name }} del proyecto Pinball."
+          files: Pinball-Release.zip
