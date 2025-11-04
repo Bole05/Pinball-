@@ -15,8 +15,8 @@ Lanza la pelota a la portería y obten la máxima puntuación. Usa los flippers 
 
 ## Developers
 
- - {Yangfeng Xu} - Programador, gestion de asseets -  yangfeng-xu
- - {Bole Wu} - Programador, soporte técnico - Bole05
+ - Yangfeng Xu - Programador, gestion de asseets -  yangfeng-xu
+ - Bole Wu - Programador, soporte técnico - Bole05
  - {Dev03} - {Role(s)}
  - {Dev04} - {Role(s)}
 
