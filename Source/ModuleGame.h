@@ -36,7 +36,7 @@ public:
 	PhysBody* pala_r;
 	PhysBody* pala_l;
 	PhysBody* goalSensor;
-	PhysBody* circleBody;
+	PhysBody* circleBody= nullptr;
 	bool sensed;
 	bool resetPending;
 	

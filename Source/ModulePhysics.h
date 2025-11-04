@@ -50,7 +50,7 @@ public:
 	PhysBody* CreateRectangle(int x, int y, int width, int height);
 	PhysBody* CreateRectangleSensor(int x, int y, int width, int height);
 	PhysBody* CreateChain(int x, int y, const int* points, int size);
-	PhysBody* circleBody;
+	/*PhysBody* circleBody;*/
 	b2RevoluteJoint* CreateJoint(b2RevoluteJointDef* def);
 	// b2ContactListener ---
 	void BeginContact(b2Contact* contact);
