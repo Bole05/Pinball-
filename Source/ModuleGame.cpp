@@ -137,9 +137,9 @@ bool ModuleGame::Start()
 	goalkeeper = LoadTexture("Assets/goalkeeper.png");
 	
 	menuTexture = LoadTexture("Assets/menu_back.png"); // asegúrate de tener esta imagen
-
+	//Load music and sound
 	bonus_fx = App->audio->LoadFx("Assets/bonus.wav");
-
+	App->audio->PlayMusic("Assets/Music_font.wav");
 	// Create the ball automatically
 	circleBody = App->physics->CreateCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 9);
 	circleBody->listener = this;
