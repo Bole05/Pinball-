@@ -57,7 +57,6 @@ public:
 
 	Texture2D circle{};
 	Texture2D box{};
-	Texture2D rick{};
 	Texture2D fondo{};
 	Texture2D pala_right{};
 	Texture2D pala_left{};
