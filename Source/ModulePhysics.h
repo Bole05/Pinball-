@@ -3,7 +3,15 @@
 #include "Module.h"
 #include "Globals.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+// Suppress: Variable is uninitialized (C26495) for third-party Box2D types
+#pragma warning(disable : 26495)
+#endif
 #include "box2d\box2d.h"
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #define GRAVITY_X 0.0f
 #define GRAVITY_Y -8.0f
@@ -18,7 +26,7 @@
 class PhysBody
 {
 public:
-	PhysBody() : listener(NULL), body(NULL)
+	PhysBody() : width(0), height(0), body(NULL), listener(NULL)
 	{}
 
 	//void GetPosition(int& x, int& y) const;

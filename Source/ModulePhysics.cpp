@@ -37,20 +37,6 @@ update_status ModulePhysics::PreUpdate()
 {
 	world->Step(1.0f / 60.0f, 6, 2);
 
-	for(b2Contact* c = world->GetContactList(); c; c = c->GetNext())
-	{
-		if(c->GetFixtureA()->IsSensor() && c->IsTouching())
-		{
-			b2BodyUserData data1 = c->GetFixtureA()->GetBody()->GetUserData();
-			b2BodyUserData data2 = c->GetFixtureA()->GetBody()->GetUserData();
-
-			PhysBody* pb1 = (PhysBody*)data1.pointer;
-			PhysBody* pb2 = (PhysBody*)data2.pointer;
-			if(pb1 && pb2 && pb1->listener)
-				pb1->listener->OnCollision(pb1, pb2);
-		}
-	}
-
 	return UPDATE_CONTINUE;
 }
 

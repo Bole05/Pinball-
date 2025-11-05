@@ -49,7 +49,7 @@ public:
 		Vector2 position{ (float)x, (float)y };
 		float desired_radius = 9.0f;
 
-		// Calcula la escala para que el ancho de la textura coincida con el diámetro físico
+		// Calcula la escala para que el ancho de la textura coincida con el diï¿½metro fï¿½sico
 		float scale = (desired_radius * 2.0f) / (float)texture.width;
 
 		Rectangle source = { 0.0f, 0.0f, (float)texture.width, (float)texture.height };
@@ -96,8 +96,22 @@ private:
 
 
 ModuleGame::ModuleGame(Application* app, bool start_enabled) : Module(app, start_enabled)
-{	sensed = false;
+{	
+	sensed = false;
 	resetPending = false;
+	gameStarted = false;
+	score = 0;
+	lives = 3;
+	ignoreCollisionsFrames = 0;
+	
+	// Initialize goalkeeper animation
+	goalkeeperX = SCREEN_WIDTH / 2.0f;
+	baseGoalkeeperSpeed = 1.5f;
+	goalkeeperSpeed = baseGoalkeeperSpeed;
+	goalkeeperMovingRight = true;
+	
+	// Initialize base ball velocity
+	baseballVelocity = 3.0f;
 }
 
 ModuleGame::~ModuleGame()
@@ -119,26 +133,55 @@ bool ModuleGame::Start()
 
 	box = LoadTexture("Assets/crate.png");
 	
-	menuTexture = LoadTexture("Assets/menu_back.png"); // asegúrate de tener esta imagen
+	// Load goalkeeper decoration texture
+	goalkeeper = LoadTexture("Assets/goalkeeper.png");
+	
+	menuTexture = LoadTexture("Assets/menu_back.png"); // asegÃºrate de tener esta imagen
 
 	bonus_fx = App->audio->LoadFx("Assets/bonus.wav");
 
+	// Create the ball automatically
 	circleBody = App->physics->CreateCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 9);
 	circleBody->listener = this;
-	//------------------------------Sistema Puntuación---------------------------------------------//
+	circleBody->body->SetBullet(true);
+	
+	//------------------------------Sistema PuntuaciÃ³n---------------------------------------------//
 
-	sensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, SCREEN_HEIGHT, SCREEN_WIDTH, 35);
-
+	// PorterÃ­a rival (arriba) - suma puntos
 	goalSensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, 20, 200, 20);
 	goalSensor->listener = this;
 
+	// PorterÃ­a propia (entre las palancas) - resta vida
+	// PosiciÃ³n: justo debajo y entre las dos palancas
+	ownGoalSensor = App->physics->CreateRectangleSensor(400, 440, 70, 10);
+	ownGoalSensor->listener = this;
+
+	// Sensor de caÃ­da (fondo) - resta puntos
+	// Ajuste: bajado 25 px respecto al valor anterior
+	// Centro en X, Y=450, ancho toda la mesa, altura 10 px
+	sensor = App->physics->CreateRectangleSensor(SCREEN_WIDTH / 2, 450, SCREEN_WIDTH, 10);
+	sensor->listener = this;
+
+	// Create goalkeeper physics body with proper collision settings
+	goalkeeperBody = App->physics->CreateRectangle((int)goalkeeperX, 35, 50, 70);
+	goalkeeperBody->body->SetType(b2_kinematicBody);
+	goalkeeperBody->listener = this;
+	
+	// Set up the goalkeeper fixture for better collision response
+	b2Fixture* goalkeeperFixture = goalkeeperBody->body->GetFixtureList();
+	if (goalkeeperFixture != nullptr)
+	{
+		goalkeeperFixture->SetRestitution(0.8f); // Make it bouncy
+		goalkeeperFixture->SetFriction(0.1f);
+		goalkeeperFixture->SetDensity(1.0f);
+	}
 
 	//-------------------------------CREACION DE COLISIONES DE LAS PALAS---------------------------//
 	pala_right = LoadTexture("Assets/boardR2.png");
 	pala_left = LoadTexture("Assets/boardL2.png");
-	// Tamaños físicos
-	int ancho_pala = (int)(pala_left.width * PALA_SCALE);
-	int alto_pala = (int)(pala_left.height * PALA_SCALE);
+	// TamaÃ±os fÃ­sicos - reducidos 3 pÃ­xeles en cada dimensiÃ³n
+	int ancho_pala = (int)(pala_left.width * PALA_SCALE) - 3;
+	int alto_pala = (int)(pala_left.height * PALA_SCALE) - 3;
 
 	// Pivote izquierdo
 	PhysBody* pivote_L = App->physics->CreateRectangle(340, 395, 5, 5);
@@ -181,7 +224,7 @@ bool ModuleGame::Start()
 	pala_r_joint = App->physics->CreateJoint(&jointDefR);
 	//---------------------------------FIN COLISIONES PALAS-----------------------------------------//
 	
-	//---------------------------------CREACIÓN FISICAS MAPA----------------------------------------//
+	//---------------------------------CREACIï¿½N FISICAS MAPA----------------------------------------//
 
 	int game_back1[20] = {
 	274, 121,
@@ -299,6 +342,7 @@ bool ModuleGame::CleanUp()
 {
 	LOG("Unloading Intro scene");
 	UnloadTexture(menuTexture);
+	UnloadTexture(goalkeeper);
 	return true;
 }
 
@@ -307,19 +351,18 @@ update_status ModuleGame::Update()
 {
 	if (!gameStarted)
 	{
-		// --- ESTADO DE MENÚ ---
-		// Se dibuja la pantalla del menú y se maneja la entrada para empezar
+		// --- ESTADO DE MENÃš ---
 		DrawTexture(menuTexture, 0, 0, WHITE);
 		DrawText("Presiona ESPACIO para jugar", 200, 400, 30, WHITE);
 
 		if (IsKeyPressed(KEY_SPACE))
 		{
 			gameStarted = true;
-			// Aseguramos que la pelota esté en posición inicial al empezar
+			lives = 3;
+			score = 0;
 			ResetBall();
 		}
 
-		// Devolvemos el control inmediatamente para NO dibujar el resto del juego
 		return UPDATE_CONTINUE;
 	}
 
@@ -327,6 +370,75 @@ update_status ModuleGame::Update()
 
 	// 1. Dibujar el fondo del juego
 	App->renderer->Draw(fondo, 0, 0);
+	
+	// Draw the ball
+	if (circleBody != nullptr)
+	{
+		int x, y;
+		circleBody->GetPhysicPosition(x, y);
+		Vector2 position{ (float)x, (float)y };
+		float desired_radius = 9.0f;
+
+		// Calculate scale so texture width matches physical diameter
+		float scale = (desired_radius * 2.0f) / (float)circle.width;
+
+		Rectangle source = { 0.0f, 0.0f, (float)circle.width, (float)circle.height };
+		Rectangle dest = { position.x, position.y, (float)circle.width * scale, (float)circle.height * scale };
+		Vector2 origin = { (float)circle.width * scale / 2.0f, (float)circle.height * scale / 2.0f };
+		float rotation = circleBody->GetRotation() * RAD2DEG;
+
+		DrawTexturePro(circle, source, dest, origin, rotation, WHITE);
+	}
+	
+	// Draw and animate goalkeeper decoration
+	if (goalkeeper.id != 0) // Check if texture is loaded
+	{
+		float scale = 0.15f; // Scale down the goalkeeper
+		float scaledWidth = goalkeeper.width * scale;
+		float scaledHeight = goalkeeper.height * scale;
+		
+		int goalkeeperY = 25; // Near the top goal area
+		
+		// Define goal boundaries (adjust these to match your goal area)
+		float goalLeft = 300.0f;
+		float goalRight = 500.0f;
+		float goalCenter = (goalLeft + goalRight) / 2.0f;
+		
+		// Calculate speed multiplier: 50% increase per point
+		float speedMultiplier = 1.0f + (score * 0.50f);
+		float currentGoalkeeperSpeed = baseGoalkeeperSpeed * speedMultiplier;
+		
+		// Animate goalkeeper movement
+		if (goalkeeperMovingRight)
+		{
+			goalkeeperX += currentGoalkeeperSpeed;
+			if (goalkeeperX + scaledWidth / 2.0f >= goalRight)
+			{
+				goalkeeperMovingRight = false;
+			}
+		}
+		else
+		{
+			goalkeeperX -= currentGoalkeeperSpeed;
+			if (goalkeeperX - scaledWidth / 2.0f <= goalLeft)
+			{
+				goalkeeperMovingRight = true;
+			}
+		}
+		
+		// Update goalkeeper physics body position
+		if (goalkeeperBody != nullptr)
+		{
+			// Position the physics body to match the visual goalkeeper (center of the collision box)
+			b2Vec2 newPos(PIXEL_TO_METERS(goalkeeperX), PIXEL_TO_METERS(35.0f));
+			goalkeeperBody->body->SetTransform(newPos, 0.0f);
+		}
+		
+		// Draw goalkeeper centered on its position
+		DrawTextureEx(goalkeeper, 
+			Vector2{ goalkeeperX - scaledWidth / 2.0f, (float)goalkeeperY }, 
+			0.0f, scale, WHITE);
+	}
 	
 
 	//-------------------------------CONTROL DE LAS PALAS-------------------------//
@@ -354,7 +466,7 @@ update_status ModuleGame::Update()
 	float w = pala_left.width * PALA_SCALE;
 	float h = pala_left.height * PALA_SCALE;
 
-	// El cuerpo físico rota alrededor de su centro, no del borde
+	// El cuerpo fï¿½sico rota alrededor de su centro, no del borde
 	Vector2 origin = { w / 2.0f, h / 2.0f };
 
 	DrawTexturePro(
@@ -378,8 +490,20 @@ update_status ModuleGame::Update()
 	//----------------------------------FIN TEXTURA PALAS------------------------//
 
 
-	//----------------------------------Puntuación-------------------------------//
+	//----------------------------------PuntuaciÃ³n y Vidas-------------------------------//
 	DrawText(TextFormat("Score: %i", score), 682, 99, 23, WHITE);
+	DrawText(TextFormat("Lives: %i", lives), 682, 130, 23, WHITE);
+	
+	// Decrementar frames de ignorar colisiones
+	if (ignoreCollisionsFrames > 0)
+		ignoreCollisionsFrames--;
+	
+	// Verificar Game Over
+	if (lives <= 0)
+	{
+		gameStarted = false;
+		return UPDATE_CONTINUE;
+	}
 	//--------------------------------------------------------------------------//
 
 	if(IsKeyPressed(KEY_SPACE))
@@ -453,12 +577,38 @@ void ModuleGame::ResetBall()
 {
 	if (circleBody != nullptr)
 	{
-		circleBody->body->SetTransform(b2Vec2(PIXEL_TO_METERS(SCREEN_WIDTH / 2),PIXEL_TO_METERS(SCREEN_HEIGHT / 2)), 0);
+		// Generar nÃºmero aleatorio para decidir el lado (0 = izquierda, 1 = derecha)
+		int spawnSide = GetRandomValue(0, 1);
+		
+		int spawnX, spawnY;
+		
+		if (spawnSide == 0)
+		{
+			// Spawn en el borde superior izquierdo
+			spawnX = 290; // PosiciÃ³n en el borde izquierdo superior
+			spawnY = 50;  // Altura cerca del borde superior
+		}
+		else
+		{
+			// Spawn en el borde superior derecho  
+			spawnX = 510; // PosiciÃ³n en el borde derecho superior
+			spawnY = 50;  // Altura cerca del borde superior
+		}
+		
+		circleBody->body->SetTransform(b2Vec2(PIXEL_TO_METERS(spawnX), PIXEL_TO_METERS(spawnY)), 0);
 		circleBody->body->SetLinearVelocity(b2Vec2_zero);
 		circleBody->body->SetAngularVelocity(0);
 
-		// Empuje inicial hacia abajo
-		circleBody->body->SetLinearVelocity(b2Vec2(0, 3));
+		// Calculate speed multiplier: 50% increase per point
+		float speedMultiplier = 1.0f + (score * 0.50f);
+		float currentBallVelocity = baseballVelocity * speedMultiplier;
+		
+		// Empuje inicial hacia abajo con ligera variaciÃ³n lateral
+		float horizontalPush = (spawnSide == 0) ? 0.5f : -0.5f; // PequeÃ±o impulso hacia el centro
+		circleBody->body->SetLinearVelocity(b2Vec2(horizontalPush, currentBallVelocity));
+		
+		// Ignorar colisiones por 30 frames (medio segundo a 60fps)
+		ignoreCollisionsFrames = 30;
 	}
 }
 
@@ -466,18 +616,38 @@ void ModuleGame::ResetBall()
 
 void ModuleGame::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 {
+	// No procesar colisiones si el juego no ha empezado
+	if (!gameStarted)
+		return;
+	
+	// Ignorar colisiones durante los primeros frames despuÃ©s de resetear
+	if (ignoreCollisionsFrames > 0)
+		return;
+    
+	// Evitar procesar mÃºltiples veces en el mismo frame si ya hay un reset pendiente
+	if (resetPending)
+		return;
+	
+	// Solo nos interesan colisiones de sensores con la pelota
+	const bool ballHit = (circleBody != nullptr && bodyB == circleBody);
 
-	if (bodyA == sensor || bodyB == sensor)
-	{
-		// ?? NUEVO — marcar para resetear en el siguiente frame
-		resetPending = true;
-	}
-
-	if (bodyA == goalSensor || bodyB == goalSensor)
+	// Gol en porterÃ­a rival (arriba) - suma punto (solo si bodyA es el sensor y bodyB es la pelota)
+	if (bodyA == goalSensor && ballHit)
 	{
 		score++;
 		App->audio->PlayFx(bonus_fx);
-		LOG("¡Gol! Puntuación: %d", score);
-		resetPending = true;  // ?? también aquí
+		resetPending = true;
+	}
+	// Pelota entra en porterÃ­a propia (entre palancas) - resta vida (solo si bodyA es el sensor y bodyB es la pelota)
+	else if (bodyA == ownGoalSensor && ballHit)
+	{
+		lives--;
+		resetPending = true;
+	}
+	// Pelota cae abajo (detrÃ¡s de palancas) - resta punto (solo si bodyA es el sensor y bodyB es la pelota)
+	else if (bodyA == sensor && ballHit)
+	{
+		score--;
+		resetPending = true;
 	}
 }
