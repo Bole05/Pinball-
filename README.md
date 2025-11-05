@@ -19,8 +19,8 @@ Link al juego original : https://es.y8.com/games/soccer_pinball
 
  - Yangfeng Xu - Programador, gestion de asseets -  yangfeng-xu
  - Bole Wu - Programador, soporte técnico - Bole05
- - {Dev03} - {Role(s)}
- - {Dev04} - {Role(s)}
+ - Anisa Megrini Enzo - programador - Ddk18
+ - Albero García Aidan - soporte programación - IDK-oss52
 
 ## License
 
